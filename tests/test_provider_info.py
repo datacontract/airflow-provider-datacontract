@@ -13,3 +13,17 @@ def test_plugin_importable():
 
     assert DataContractPlugin.name == "datacontract"
     assert DataContractPlugin.operator_extra_links
+
+
+def test_react_app_bundle_shipped():
+    from pathlib import Path
+
+    import datacontract_provider
+    from datacontract_provider.plugin import DataContractPlugin
+
+    bundle = Path(datacontract_provider.__file__).parent / "static" / "main.umd.cjs"
+    assert bundle.is_file()
+    assert "AirflowPlugin" in bundle.read_text()
+    if DataContractPlugin.react_apps:  # present when FastAPI is available (Airflow 3)
+        assert DataContractPlugin.react_apps[0]["bundle_url"] == "/datacontract/static/main.umd.cjs"
+        assert DataContractPlugin.react_apps[0]["url_route"] == "datacontract-results"

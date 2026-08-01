@@ -1,11 +1,13 @@
-"""Airflow plugin that registers the operator extra link and, on Airflow 3,
-a small UI under /datacontract that renders recent data contract test results
+"""Airflow plugin that registers the operator extra link and, on Airflow 3.1+,
+a React view in the UI that renders recent data contract test results
 collected from XCom."""
 
 from __future__ import annotations
 
 import json
 import logging
+import mimetypes
+from pathlib import Path
 
 from airflow.plugins_manager import AirflowPlugin
 
@@ -15,7 +17,7 @@ from datacontract_provider.links import TestResultsLink
 log = logging.getLogger(__name__)
 
 _fastapi_apps: list = []
-_external_views: list = []
+_react_apps: list = []
 
 _PAGE = """<!doctype html>
 <html>
@@ -89,7 +91,10 @@ _PAGE = """<!doctype html>
 
 try:
     from fastapi import FastAPI
-    from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+
+    mimetypes.add_type("application/javascript", ".cjs")
+    _STATIC_DIR = Path(__file__).parent / "static"
 
     def _recent_results(limit: int) -> list[dict]:
         from airflow.utils.session import create_session
@@ -135,14 +140,17 @@ try:
     def results_page():
         return HTMLResponse(_PAGE)
 
+    @app.get("/static/main.umd.cjs")
+    def react_bundle():
+        return FileResponse(_STATIC_DIR / "main.umd.cjs", media_type="application/javascript")
+
     _fastapi_apps = [{"app": app, "url_prefix": "/datacontract", "name": "Data Contract Results"}]
-    _external_views = [
+    _react_apps = [
         {
             "name": "Data Contract Results",
-            "href": "/datacontract/results",
-            "destination": "nav",
-            # Render embedded in the Airflow UI (iframe) instead of as an external link.
+            "bundle_url": "/datacontract/static/main.umd.cjs",
             "url_route": "datacontract-results",
+            "destination": "nav",
         }
     ]
 except ImportError:  # Airflow 2: no FastAPI-based UI plugins
@@ -153,4 +161,5 @@ class DataContractPlugin(AirflowPlugin):
     name = "datacontract"
     operator_extra_links = (TestResultsLink(),)
     fastapi_apps = _fastapi_apps
-    external_views = _external_views
+    # React view in the Airflow UI (Airflow 3.1+; ignored on older versions).
+    react_apps = _react_apps

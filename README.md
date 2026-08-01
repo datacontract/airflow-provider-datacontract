@@ -105,13 +105,20 @@ The operator pushes two XCom entries:
 - `datacontract_result`: `{result, data_contract_file, server, checks_total, checks_failed, checks: [{name, result, category, type, model, field, reason}]}`
 - `datacontract_results_url`: the `results_web_url`, if configured
 
-### Results view in the Airflow UI (Airflow 3)
+### Results view in the Airflow UI (Airflow 3.1+)
 
-The provider ships a plugin that adds a **Data Contract Results** entry to the
-navigation, rendering the most recent test runs across all DAGs with
-expandable check details. It is served under `/datacontract/results` by the
-API server and reads the results from XCom. On Airflow 2 the plugin degrades
-gracefully and only registers the extra link.
+The provider ships a React app (registered via the plugin `react_apps`
+interface) that adds a **Data Contract Results** entry to the navigation,
+rendering the most recent test runs across all DAGs natively in the Airflow
+UI, with expandable check details and auto-refresh. The data comes from XCom
+via `/datacontract/api/results`; a standalone HTML fallback is available at
+`/datacontract/results`. On Airflow 2 the plugin degrades gracefully and only
+registers the extra link.
+
+The React source lives in `ui/`; the built UMD bundle is committed at
+`src/datacontract_provider/static/main.umd.cjs` and shipped with the package
+(rebuild with `cd ui && npm install && npm run build`, then copy
+`ui/dist/main.umd.cjs` there).
 
 ### Entropy Data (optional)
 
