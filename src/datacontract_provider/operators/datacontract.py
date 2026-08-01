@@ -5,6 +5,10 @@ from typing import Any
 
 from airflow.exceptions import AirflowException
 
+from datacontract_provider.connections import (
+    config_from_entropy_data_connection,
+    config_from_server_connection,
+)
 from datacontract_provider.consts import XCOM_RESULT_KEY, XCOM_RESULTS_URL_KEY
 from datacontract_provider.links import TestResultsLink
 
@@ -36,9 +40,23 @@ class DataContractTestOperator(BaseOperator):
     :param schema_name: Schema/model to test, defaults to all. Templated.
     :param check_categories: Subset of check categories to run,
         e.g. ``{"schema", "quality"}``.
+    :param server_conn_id: Airflow connection with credentials for the server under
+        test. Mapped to Data Contract CLI configuration based on the connection type
+        (databricks, snowflake, postgres, mysql, oracle, impala, trino, mssql,
+        redshift, aws, google_cloud_platform, wasb, kafka). Keys in the connection
+        extra prefixed with ``datacontract_`` are passed through as additional
+        configuration. Resolved via Airflow's secrets machinery; credentials are
+        passed programmatically and never written to the process environment.
+    :param entropy_data_conn_id: Airflow connection for Entropy Data. The
+        connection password (or ``api_key`` in extra) becomes the API key, the
+        host (if set) the Entropy Data host.
+    :param config: Additional Data Contract CLI configuration fields
+        (see https://docs.datacontract.com/configuration), merged over the
+        connection-derived values.
     :param publish_url: Optional URL to publish the test results to, e.g.
         ``https://api.entropy-data.com/api/test-results`` for Entropy Data
-        (requires the ``ENTROPY_DATA_API_KEY`` environment variable). Templated.
+        (API key via ``entropy_data_conn_id`` or the ``ENTROPY_DATA_API_KEY``
+        environment variable). Templated.
     :param results_web_url: Optional URL of a web page showing the published results.
         When set, it is exposed as a "Test Results" button on the task instance. Templated.
     :param include_failed_samples: Collect a sample of failing rows in the results.
@@ -52,6 +70,8 @@ class DataContractTestOperator(BaseOperator):
         "data_contract_str",
         "server",
         "schema_name",
+        "server_conn_id",
+        "entropy_data_conn_id",
         "publish_url",
         "results_web_url",
     )
@@ -66,6 +86,9 @@ class DataContractTestOperator(BaseOperator):
         server: str | None = None,
         schema_name: str | None = None,
         check_categories: Collection[str] | None = None,
+        server_conn_id: str | None = None,
+        entropy_data_conn_id: str | None = None,
+        config: dict[str, Any] | None = None,
         publish_url: str | None = None,
         results_web_url: str | None = None,
         include_failed_samples: bool = False,
@@ -81,6 +104,9 @@ class DataContractTestOperator(BaseOperator):
         self.server = server
         self.schema_name = schema_name
         self.check_categories = check_categories
+        self.server_conn_id = server_conn_id
+        self.entropy_data_conn_id = entropy_data_conn_id
+        self.config = config
         self.publish_url = publish_url
         self.results_web_url = results_web_url
         self.include_failed_samples = include_failed_samples
@@ -106,6 +132,10 @@ class DataContractTestOperator(BaseOperator):
         if self.include_failed_samples:
             dc_kwargs["include_failed_samples"] = True
 
+        config_fields = self._build_config_fields()
+        if config_fields:
+            dc_kwargs["config"] = self._build_config(config_fields)
+
         run = DataContract(**dc_kwargs).test()
 
         payload = self._build_payload(run)
@@ -123,6 +153,37 @@ class DataContractTestOperator(BaseOperator):
                 f"({payload['checks_failed']} of {payload['checks_total']} checks failed)"
             )
         return payload
+
+    def _build_config_fields(self) -> dict[str, Any]:
+        fields: dict[str, Any] = {}
+        if self.server_conn_id:
+            fields.update(config_from_server_connection(self._get_connection(self.server_conn_id)))
+        if self.entropy_data_conn_id:
+            fields.update(config_from_entropy_data_connection(self._get_connection(self.entropy_data_conn_id)))
+        if self.config:
+            fields.update(self.config)
+        if fields:
+            self.log.info("Data Contract CLI configuration from connections: %s", ", ".join(sorted(fields)))
+        return fields
+
+    @staticmethod
+    def _get_connection(conn_id: str) -> Any:
+        try:  # Airflow 3
+            from airflow.sdk import BaseHook
+        except ImportError:  # Airflow 2
+            from airflow.hooks.base import BaseHook
+        return BaseHook.get_connection(conn_id)
+
+    @staticmethod
+    def _build_config(fields: dict[str, Any]) -> Any:
+        try:
+            from datacontract import Config
+        except ImportError as e:
+            raise AirflowException(
+                "server_conn_id / entropy_data_conn_id / config require datacontract-cli >= 1.0 "
+                "with programmatic configuration support (https://docs.datacontract.com/configuration)."
+            ) from e
+        return Config(**fields)
 
     def _build_payload(self, run: Any) -> dict[str, Any]:
         checks = []

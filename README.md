@@ -55,15 +55,48 @@ nightly_datacontract_test()
 | `server` | Server key from the contract's `servers` section to test against |
 | `schema_name` | Schema/model to test, defaults to all |
 | `check_categories` | Subset of `schema`, `quality`, `servicelevel`, `custom` |
+| `server_conn_id` | Airflow connection with credentials for the server under test (see below) |
+| `entropy_data_conn_id` | Airflow connection for Entropy Data (password = API key, host optional) |
+| `config` | Dict of additional [Data Contract CLI configuration](https://docs.datacontract.com/configuration) fields |
 | `publish_url` | URL to publish test results to (optional) |
 | `results_web_url` | Web page of the published results, shown as a "Test Results" button (optional) |
 | `include_failed_samples` | Collect samples of failing rows |
 | `fail_on_warning` | Also fail the task on result `warning` |
 | `datacontract_kwargs` | Extra kwargs for the `DataContract` constructor, e.g. `spark` |
 
-Credentials for the server under test are read from environment variables by the
-Data Contract CLI, e.g. `DATACONTRACT_SNOWFLAKE_USERNAME`. Set them on the
-worker (secret-backed where possible).
+### Credentials via Airflow connections (recommended)
+
+Pass `server_conn_id` to resolve credentials through Airflow's connection
+machinery, including any configured secrets backend (Vault, AWS Secrets
+Manager, Azure Key Vault, ...). The connection is mapped to
+[Data Contract CLI configuration](https://docs.datacontract.com/configuration)
+based on its type and passed programmatically; credentials never touch the
+process environment.
+
+```python
+DataContractTestOperator(
+    task_id="test_orders_contract",
+    data_contract_file="...",
+    server="production",
+    server_conn_id="databricks_prod",       # conn type: databricks
+    entropy_data_conn_id="entropy_data",    # password = API key
+    publish_url="https://api.entropy-data.com/api/test-results",
+)
+```
+
+Supported connection types: `databricks` (host, password=token, extra
+`http_path`), `snowflake` (login/password, extra `account`, `warehouse`,
+`role`), `postgres`, `mysql`, `oracle`, `impala`, `trino`, `mssql`,
+`redshift` (login/password/host/port/schema), `aws` (login/password=key
+pair, extra `region_name`), `google_cloud_platform` (extra `key_path`,
+`project`), `wasb`/`azure`, and `kafka`. For anything else, add
+`datacontract_`-prefixed keys to the connection extra
+(e.g. `datacontract_trino_jwt_token`); those pass through to any config field
+and also override the mapped values. The `config` parameter is merged last.
+
+Requires `datacontract-cli >= 1.0`. Alternatively, the CLI still reads
+credentials from environment variables, e.g. `DATACONTRACT_SNOWFLAKE_USERNAME`,
+set on the worker.
 
 ### XCom
 

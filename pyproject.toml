@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "airflow-provider-datacontract"
-version = "0.1.1"
+version = "0.2.0"
 description = "Apache Airflow provider for the Data Contract CLI: run data contract tests as quality gates in your DAGs"
 readme = "README.md"
 license = "MIT"
@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "apache-airflow>=2.10",
-    "datacontract-cli>=0.10",
+    "datacontract-cli>=1.0",
 ]
 
 [project.optional-dependencies]
