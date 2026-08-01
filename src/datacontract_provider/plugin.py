@@ -141,6 +141,8 @@ try:
             "name": "Data Contract Results",
             "href": "/datacontract/results",
             "destination": "nav",
+            # Render embedded in the Airflow UI (iframe) instead of as an external link.
+            "url_route": "datacontract-results",
         }
     ]
 except ImportError:  # Airflow 2: no FastAPI-based UI plugins
