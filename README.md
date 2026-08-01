@@ -24,7 +24,7 @@ Extras are passed through to the Data Contract CLI, e.g. for Snowflake:
 pip install "airflow-provider-datacontract[snowflake]"
 ```
 
-Available extras: `snowflake`, `databricks`, `bigquery`, `postgres`, `s3`, `azure`, `kafka`, `trino`.
+Available extras: `duckdb` (local files, csv/parquet), `snowflake`, `databricks`, `bigquery`, `postgres`, `s3`, `azure`, `kafka`, `trino`.
 
 ## Usage
 
