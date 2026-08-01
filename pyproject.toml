@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "airflow-provider-datacontract"
+version = "0.1.0"
+description = "Apache Airflow provider for the Data Contract CLI: run data contract tests as quality gates in your DAGs"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Jochen Christ" }]
+keywords = ["airflow", "provider", "datacontract", "data-contract", "data-quality", "odcs"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Apache Airflow",
+    "Framework :: Apache Airflow :: Provider",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "apache-airflow>=2.10",
+    "datacontract-cli>=0.10",
+]
+
+[project.optional-dependencies]
+snowflake = ["datacontract-cli[snowflake]"]
+databricks = ["datacontract-cli[databricks]"]
+bigquery = ["datacontract-cli[bigquery]"]
+postgres = ["datacontract-cli[postgres]"]
+s3 = ["datacontract-cli[s3]"]
+azure = ["datacontract-cli[azure]"]
+kafka = ["datacontract-cli[kafka]"]
+trino = ["datacontract-cli[trino]"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[project.urls]
+Homepage = "https://cli.datacontract.com"
+Repository = "https://github.com/datacontract/airflow-provider-datacontract"
+Issues = "https://github.com/datacontract/airflow-provider-datacontract/issues"
+
+[project.entry-points.apache_airflow_provider]
+provider_info = "datacontract_provider:get_provider_info"
+
+[project.entry-points."airflow.plugins"]
+datacontract = "datacontract_provider.plugin:DataContractPlugin"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/datacontract_provider"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
