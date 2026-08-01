@@ -65,6 +65,8 @@ def test_conn_ids_build_config(monkeypatch):
         "entropy_data_api_key": "ed-key",
         "max_errors": 25,
     }
+    # publish_url is derived from the Entropy Data connection when not set explicitly
+    assert dc_cls.call_args.kwargs["publish_url"] == "https://api.entropy-data.com/api/test-results"
 
 
 def test_no_conn_id_means_no_config(monkeypatch):

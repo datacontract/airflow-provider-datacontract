@@ -1,4 +1,4 @@
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 
 def get_provider_info():
@@ -18,6 +18,12 @@ def get_provider_info():
             {
                 "integration-name": "Data Contract CLI",
                 "python-modules": ["datacontract_provider.operators.datacontract"],
+            }
+        ],
+        "connection-types": [
+            {
+                "connection-type": "entropy_data",
+                "hook-class-name": "datacontract_provider.hooks.entropy_data.EntropyDataHook",
             }
         ],
         "extra-links": ["datacontract_provider.links.TestResultsLink"],

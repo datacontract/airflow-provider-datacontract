@@ -47,9 +47,10 @@ class DataContractTestOperator(BaseOperator):
         extra prefixed with ``datacontract_`` are passed through as additional
         configuration. Resolved via Airflow's secrets machinery; credentials are
         passed programmatically and never written to the process environment.
-    :param entropy_data_conn_id: Airflow connection for Entropy Data. The
-        connection password (or ``api_key`` in extra) becomes the API key, the
-        host (if set) the Entropy Data host.
+    :param entropy_data_conn_id: Airflow connection for Entropy Data
+        (connection type ``entropy_data``; password = API key, host optional).
+        When set and ``publish_url`` is not given, test results are published
+        to the connection's host (``<host>/api/test-results``).
     :param config: Additional Data Contract CLI configuration fields
         (see https://docs.datacontract.com/configuration), merged over the
         connection-derived values.
@@ -127,14 +128,19 @@ class DataContractTestOperator(BaseOperator):
             dc_kwargs["schema_name"] = self.schema_name
         if self.check_categories:
             dc_kwargs["check_categories"] = set(self.check_categories)
-        if self.publish_url:
-            dc_kwargs["publish_url"] = self.publish_url
         if self.include_failed_samples:
             dc_kwargs["include_failed_samples"] = True
 
         config_fields = self._build_config_fields()
         if config_fields:
             dc_kwargs["config"] = self._build_config(config_fields)
+
+        publish_url = self.publish_url
+        if not publish_url and self.entropy_data_conn_id:
+            host = str(config_fields.get("entropy_data_host") or "https://api.entropy-data.com")
+            publish_url = f"{host.rstrip('/')}/api/test-results"
+        if publish_url:
+            dc_kwargs["publish_url"] = publish_url
 
         run = DataContract(**dc_kwargs).test()
 

@@ -79,10 +79,15 @@ DataContractTestOperator(
     data_contract_file="...",
     server="production",
     server_conn_id="databricks_prod",       # conn type: databricks
-    entropy_data_conn_id="entropy_data",    # password = API key
-    publish_url="https://api.entropy-data.com/api/test-results",
+    entropy_data_conn_id="entropy_data",    # conn type: entropy_data
 )
 ```
+
+The provider registers an **Entropy Data** connection type: create a
+connection with type `entropy_data`, put the API key in the password field,
+and optionally override the host (default `https://api.entropy-data.com`).
+When `entropy_data_conn_id` is set and no `publish_url` is given, test
+results are published to `<host>/api/test-results` automatically.
 
 Supported connection types: `databricks` (host, password=token, extra
 `http_path`), `snowflake` (login/password, extra `account`, `warehouse`,
