@@ -79,7 +79,7 @@ DataContractTestOperator(
     data_contract_file="...",
     server="production",
     server_conn_id="databricks_prod",       # conn type: databricks
-    entropy_data_conn_id="entropy_data",    # conn type: entropy_data
+    entropy_data_conn_id="entropy_data",    # conn type: entropydata
 )
 ```
 
