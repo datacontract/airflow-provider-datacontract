@@ -25,6 +25,25 @@ def test_databricks_connection():
     }
 
 
+def test_databricks_service_principal_via_login():
+    conn = Connection(
+        conn_id="databricks_prod",
+        conn_type="databricks",
+        host="adb-123.4.azuredatabricks.net",
+        login="client-id-uuid",
+        password="client-secret",
+        extra=json.dumps({"http_path": "/sql/1.0/warehouses/abc"}),
+    )
+    config = config_from_server_connection(conn)
+    assert config == {
+        "databricks_server_hostname": "adb-123.4.azuredatabricks.net",
+        "databricks_client_id": "client-id-uuid",
+        "databricks_client_secret": "client-secret",
+        "databricks_http_path": "/sql/1.0/warehouses/abc",
+    }
+    assert "databricks_token" not in config
+
+
 def test_snowflake_connection():
     conn = Connection(
         conn_id="sf",

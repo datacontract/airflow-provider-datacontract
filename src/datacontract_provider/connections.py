@@ -42,7 +42,13 @@ def config_from_server_connection(conn: Any) -> dict[str, Any]:
     if conn_type == "databricks":
         host = (conn.host or "").removeprefix("https://").removeprefix("http://").rstrip("/")
         _set(config, "databricks_server_hostname", host)
-        _set(config, "databricks_token", conn.password)
+        if conn.login:
+            # Login set: service principal OAuth (login = client id, password = client secret)
+            _set(config, "databricks_client_id", conn.login)
+            _set(config, "databricks_client_secret", conn.password)
+        else:
+            # No login: password is a personal access / SP token
+            _set(config, "databricks_token", conn.password)
         _set(config, "databricks_http_path", extra.get("http_path"))
         _set(config, "databricks_client_id", extra.get("client_id"))
         _set(config, "databricks_client_secret", extra.get("client_secret"))

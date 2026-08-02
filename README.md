@@ -89,12 +89,13 @@ and optionally override the host (default `https://api.entropy-data.com`).
 When `entropy_data_conn_id` is set and no `publish_url` is given, test
 results are published to `<host>/api/test-results` automatically.
 
-Supported connection types: `databricks` (host, password=token, extra
-`http_path`), `snowflake` (login/password, extra `account`, `warehouse`,
-`role`), `postgres`, `mysql`, `oracle`, `impala`, `trino`, `mssql`,
-`redshift` (login/password/host/port/schema), `aws` (login/password=key
-pair, extra `region_name`), `google_cloud_platform` (extra `key_path`,
-`project`), `wasb`/`azure`, and `kafka`. For anything else, add
+Supported connection types: `databricks` (host, extra `http_path`; token
+auth: password = token, login empty; service principal OAuth: login =
+client id, password = client secret), `snowflake` (login/password, extra
+`account`, `warehouse`, `role`), `postgres`, `mysql`, `oracle`, `impala`,
+`trino`, `mssql`, `redshift` (login/password/host/port/schema), `aws`
+(login/password=key pair, extra `region_name`), `google_cloud_platform`
+(extra `key_path`, `project`), `wasb`/`azure`, and `kafka`. For anything else, add
 `datacontract_`-prefixed keys to the connection extra
 (e.g. `datacontract_trino_jwt_token`); those pass through to any config field
 and also override the mapped values. The `config` parameter is merged last.
