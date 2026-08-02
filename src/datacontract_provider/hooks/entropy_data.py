@@ -21,7 +21,7 @@ class EntropyDataHook(BaseHook):
 
     conn_name_attr = "entropy_data_conn_id"
     default_conn_name = "entropy_data_default"
-    conn_type = "entropy_data"
+    conn_type = "entropydata"
     hook_name = "Entropy Data"
 
     def __init__(self, entropy_data_conn_id: str = default_conn_name) -> None:

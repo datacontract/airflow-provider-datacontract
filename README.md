@@ -84,7 +84,7 @@ DataContractTestOperator(
 ```
 
 The provider registers an **Entropy Data** connection type: create a
-connection with type `entropy_data`, put the API key in the password field,
+connection with type `entropydata`, put the API key in the password field,
 and optionally override the host (default `https://api.entropy-data.com`).
 When `entropy_data_conn_id` is set and no `publish_url` is given, test
 results are published to `<host>/api/test-results` automatically.

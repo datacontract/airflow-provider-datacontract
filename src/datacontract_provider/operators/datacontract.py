@@ -48,7 +48,7 @@ class DataContractTestOperator(BaseOperator):
         configuration. Resolved via Airflow's secrets machinery; credentials are
         passed programmatically and never written to the process environment.
     :param entropy_data_conn_id: Airflow connection for Entropy Data
-        (connection type ``entropy_data``; password = API key, host optional).
+        (connection type ``entropydata``; password = API key, host optional).
         When set and ``publish_url`` is not given, test results are published
         to the connection's host (``<host>/api/test-results``).
     :param config: Additional Data Contract CLI configuration fields

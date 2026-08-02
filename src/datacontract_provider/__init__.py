@@ -1,4 +1,4 @@
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 
 def get_provider_info():
@@ -22,7 +22,7 @@ def get_provider_info():
         ],
         "connection-types": [
             {
-                "connection-type": "entropy_data",
+                "connection-type": "entropydata",
                 "hook-class-name": "datacontract_provider.hooks.entropy_data.EntropyDataHook",
             }
         ],
