@@ -24,15 +24,6 @@
           "engine": "datacontract"
         },
         {
-          "category": "schema",
-          "type": "field_type",
-          "name": "Check that field order_id has type string",
-          "model": "orders",
-          "field": "order_id",
-          "result": "passed",
-          "engine": "datacontract"
-        },
-        {
           "category": "quality",
           "type": "row_count",
           "name": "Row count is at least 1000",
@@ -78,7 +69,6 @@
       ],
       "logs": [
         { "level": "INFO", "message": "Running engine ibis", "timestamp": "2026-08-02T02:00:05Z" },
-        { "level": "INFO", "message": "Connecting to databricks with an OAuth service principal (M2M)", "timestamp": "2026-08-02T02:00:06Z" },
         { "level": "WARN", "message": "Freshness below SLA for line_items", "timestamp": "2026-08-02T02:02:41Z" },
         { "level": "INFO", "message": "Published test results successfully", "timestamp": "2026-08-02T02:03:04Z" }
       ]
@@ -118,9 +108,170 @@
           "engine": "datacontract"
         }
       ],
-      "logs": [
-        { "level": "INFO", "message": "Running engine ibis", "timestamp": "2026-08-02T02:00:04Z" }
-      ]
+      "logs": [{ "level": "INFO", "message": "Running engine ibis", "timestamp": "2026-08-02T02:00:04Z" }]
+    }
+  },
+  {
+    "dag_id": "nightly_datacontract_test",
+    "task_id": "test_orders_contract",
+    "run_id": "scheduled__2026-08-01T02:00:00+00:00",
+    "timestamp": "2026-08-01T02:03:20.000000",
+    "result": {
+      "runId": "1c3e5a7b-9d0f-4a2c-8e6b-0d1f2a3b4c5d",
+      "datacontractCliVersion": "1.0.17",
+      "dataContractId": "orders",
+      "dataContractVersion": "2.1.0",
+      "server": "production",
+      "timestampStart": "2026-08-01T02:00:05Z",
+      "timestampEnd": "2026-08-01T02:03:12Z",
+      "result": "failed",
+      "checks": [
+        {
+          "category": "schema",
+          "type": "field_is_present",
+          "name": "Check that field 'order_id' is present",
+          "model": "orders",
+          "field": "order_id",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "quality",
+          "type": "row_count",
+          "name": "Row count is at least 1000",
+          "model": "orders",
+          "result": "failed",
+          "reason": "Row count 655 is below the threshold 1000",
+          "engine": "datacontract",
+          "diagnostics": { "value": 655, "mustBeGreaterThanOrEqualTo": 1000 }
+        },
+        {
+          "category": "schema",
+          "type": "field_required",
+          "name": "Check that field customer_id has no missing values",
+          "model": "orders",
+          "field": "customer_id",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "quality",
+          "type": "freshness",
+          "name": "Data is fresher than 24h",
+          "model": "line_items",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "schema",
+          "type": "field_is_present",
+          "name": "Check that field 'line_item_id' is present",
+          "model": "line_items",
+          "field": "line_item_id",
+          "result": "passed",
+          "engine": "datacontract"
+        }
+      ],
+      "logs": [{ "level": "INFO", "message": "Running engine ibis", "timestamp": "2026-08-01T02:00:06Z" }]
+    }
+  },
+  {
+    "dag_id": "nightly_datacontract_test",
+    "task_id": "test_orders_contract",
+    "run_id": "scheduled__2026-07-31T02:00:00+00:00",
+    "timestamp": "2026-07-31T02:03:02.000000",
+    "result": {
+      "runId": "2d4f6b8c-0e1a-4b3d-9f7c-1e2a3b4c5d6e",
+      "datacontractCliVersion": "1.0.17",
+      "dataContractId": "orders",
+      "dataContractVersion": "2.1.0",
+      "server": "production",
+      "timestampStart": "2026-07-31T02:00:04Z",
+      "timestampEnd": "2026-07-31T02:02:58Z",
+      "result": "passed",
+      "checks": [
+        {
+          "category": "schema",
+          "type": "field_is_present",
+          "name": "Check that field 'order_id' is present",
+          "model": "orders",
+          "field": "order_id",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "quality",
+          "type": "row_count",
+          "name": "Row count is at least 1000",
+          "model": "orders",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "schema",
+          "type": "field_required",
+          "name": "Check that field customer_id has no missing values",
+          "model": "orders",
+          "field": "customer_id",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "quality",
+          "type": "freshness",
+          "name": "Data is fresher than 24h",
+          "model": "line_items",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "schema",
+          "type": "field_is_present",
+          "name": "Check that field 'line_item_id' is present",
+          "model": "line_items",
+          "field": "line_item_id",
+          "result": "passed",
+          "engine": "datacontract"
+        }
+      ],
+      "logs": [{ "level": "INFO", "message": "Running engine ibis", "timestamp": "2026-07-31T02:00:05Z" }]
+    }
+  },
+  {
+    "dag_id": "nightly_datacontract_test",
+    "task_id": "test_customers_contract",
+    "run_id": "scheduled__2026-08-01T02:00:00+00:00",
+    "timestamp": "2026-08-01T02:01:40.000000",
+    "result": {
+      "runId": "3e5a7c9d-1f2b-4c4e-a08d-2f3b4c5d6e7f",
+      "datacontractCliVersion": "1.0.17",
+      "dataContractId": "customers",
+      "dataContractVersion": "1.4.2",
+      "server": "production",
+      "timestampStart": "2026-08-01T02:00:03Z",
+      "timestampEnd": "2026-08-01T02:01:35Z",
+      "result": "passed",
+      "checks": [
+        {
+          "category": "schema",
+          "type": "field_is_present",
+          "name": "Check that field 'customer_id' is present",
+          "model": "customers",
+          "field": "customer_id",
+          "result": "passed",
+          "engine": "datacontract"
+        },
+        {
+          "category": "schema",
+          "type": "field_unique",
+          "name": "Check that field customer_id is unique",
+          "model": "customers",
+          "field": "customer_id",
+          "result": "passed",
+          "engine": "datacontract"
+        }
+      ],
+      "logs": [{ "level": "INFO", "message": "Running engine ibis", "timestamp": "2026-08-01T02:00:04Z" }]
     }
   }
 ]

@@ -9,7 +9,7 @@ Run [Data Contract CLI](https://cli.datacontract.com) tests as quality gates in 
 - `DataContractTestOperator` runs `datacontract test` against a contract and fails the task when the contract is violated, so bad data stops before it propagates downstream.
 - Per-check results are rendered in the task log (pass/fail, reason, model/field).
 - The full run report is pushed to XCom (key `datacontract_result`) in the test-results API model, so downstream tasks can branch on the outcome.
-- On Airflow 3, a "Data Contract Results" view in the UI shows recent test runs across all DAGs.
+- On Airflow 3, a "Data Contract Results" view in the UI shows the state of all tested contracts: latest result with run history per contract, failures shown first, and per-failure annotations whether a check is new or failing for several runs.
 - A "Test Results" button on the task instance links to the published results, e.g. in Entropy Data.
 
 ## Installation
