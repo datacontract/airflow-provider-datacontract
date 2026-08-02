@@ -126,6 +126,10 @@ The React source lives in `ui/`; the built UMD bundle is committed at
 (rebuild with `cd ui && npm install && npm run build`, then copy
 `ui/dist/main.umd.cjs` there).
 
+To develop the view standalone, run `cd ui && npm install && npm run dev` and
+open the printed URL: a dev harness renders the app outside Airflow, with the
+`/datacontract/api/results` endpoint served from `ui/dev-fixtures/results.json`.
+
 ### Entropy Data (optional)
 
 To publish test results to [Entropy Data](https://entropy-data.com) (formerly
