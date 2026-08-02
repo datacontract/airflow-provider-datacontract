@@ -115,7 +115,8 @@ const duration = (run: Run): string | undefined => {
   const seconds = (new Date(run.timestampEnd).getTime() - new Date(run.timestampStart).getTime()) / 1000;
   if (!Number.isFinite(seconds) || seconds < 0) return undefined;
   if (seconds < 60) return `${seconds.toFixed(1)}s`;
-  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  const whole = Math.round(seconds);
+  return `${Math.floor(whole / 60)}m ${whole % 60}s`;
 };
 
 const contractLabel = (run: Run): string => {
