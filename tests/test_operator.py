@@ -9,24 +9,19 @@ from datacontract_provider.consts import XCOM_RESULT_KEY, XCOM_RESULTS_URL_KEY
 from datacontract_provider.operators.datacontract import DataContractTestOperator
 
 
-class FakeCheck:
-    def __init__(self, result, name="check", reason=None, model=None, field=None, category="schema"):
-        self.result = result
-        self.name = name
-        self.reason = reason
-        self.model = model
-        self.field = field
-        self.category = category
-        self.type = category
+def make_check(result, name="check", reason=None, model=None, field=None, category="schema"):
+    from datacontract.model.run import Check
+
+    return Check(type=category, category=category, name=name, result=result, reason=reason, model=model, field=field)
 
 
-class FakeRun:
-    def __init__(self, result, checks):
-        self.result = result
-        self.checks = checks
+def make_run(result, checks):
+    from datacontract.model.run import Run
 
-    def has_passed(self):
-        return self.result == "passed"
+    run = Run.create_run()
+    run.result = result
+    run.checks = checks
+    return run
 
 
 def _install_fake_datacontract(monkeypatch, run):
@@ -44,7 +39,7 @@ def _install_fake_datacontract(monkeypatch, run):
 
 
 def test_passing_run_pushes_xcom(monkeypatch):
-    run = FakeRun("passed", [FakeCheck("passed", name="row count"), FakeCheck("passed", name="not null")])
+    run = make_run("passed", [make_check("passed", name="row count"), make_check("passed", name="not null")])
     dc_cls = _install_fake_datacontract(monkeypatch, run)
 
     operator = DataContractTestOperator(
@@ -57,15 +52,18 @@ def test_passing_run_pushes_xcom(monkeypatch):
 
     dc_cls.assert_called_once_with(data_contract_file="datacontract.yaml", server="production")
     assert payload["result"] == "passed"
-    assert payload["checks_total"] == 2
-    assert payload["checks_failed"] == 0
+    # Full test-results API model shape (datacontract-cli Run)
+    assert "runId" in payload
+    assert "timestampStart" in payload
+    assert [c["name"] for c in payload["checks"]] == ["row count", "not null"]
+    assert all(c["result"] == "passed" for c in payload["checks"])
     ti.xcom_push.assert_any_call(key=XCOM_RESULT_KEY, value=payload)
 
 
 def test_failing_run_raises_and_still_pushes_xcom(monkeypatch):
-    run = FakeRun(
+    run = make_run(
         "failed",
-        [FakeCheck("passed"), FakeCheck("failed", name="freshness", reason="too old", model="orders")],
+        [make_check("passed"), make_check("failed", name="freshness", reason="too old", model="orders")],
     )
     _install_fake_datacontract(monkeypatch, run)
 
@@ -75,25 +73,26 @@ def test_failing_run_raises_and_still_pushes_xcom(monkeypatch):
         operator.execute({"ti": ti})
 
     payload = ti.xcom_push.call_args_list[0].kwargs["value"]
-    assert payload["checks_failed"] == 1
+    assert payload["result"] == "failed"
     assert payload["checks"][1]["reason"] == "too old"
+    assert payload["checks"][1]["model"] == "orders"
 
 
 def test_warning_passes_unless_fail_on_warning(monkeypatch):
-    run = FakeRun("warning", [FakeCheck("warning", name="slo")])
+    run = make_run("warning", [make_check("warning", name="slo")])
     _install_fake_datacontract(monkeypatch, run)
 
     operator = DataContractTestOperator(task_id="test", data_contract_file="datacontract.yaml")
     operator.execute({"ti": MagicMock()})
 
-    _install_fake_datacontract(monkeypatch, FakeRun("warning", [FakeCheck("warning")]))
+    _install_fake_datacontract(monkeypatch, make_run("warning", [make_check("warning")]))
     strict = DataContractTestOperator(task_id="strict", data_contract_file="datacontract.yaml", fail_on_warning=True)
     with pytest.raises(AirflowException):
         strict.execute({"ti": MagicMock()})
 
 
 def test_results_web_url_pushed_for_extra_link(monkeypatch):
-    run = FakeRun("passed", [])
+    run = make_run("passed", [])
     _install_fake_datacontract(monkeypatch, run)
 
     operator = DataContractTestOperator(

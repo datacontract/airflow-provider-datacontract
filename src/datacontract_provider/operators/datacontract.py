@@ -20,18 +20,14 @@ except ImportError:  # Airflow 2
 _ICONS = {"passed": "✓", "warning": "⚠", "failed": "✗", "error": "✗", "skipped": "-", "info": "i"}
 
 
-def _plain(value: Any) -> Any:
-    """Normalize enums and other scalars to JSON-friendly values."""
-    if value is None:
-        return None
-    return getattr(value, "value", value)
-
-
 class DataContractTestOperator(BaseOperator):
     """Run ``datacontract test`` for a data contract and fail the task if the contract is violated.
 
-    The full check results are written to the task log and pushed to XCom
-    (key ``datacontract_result``), so downstream tasks can branch on the outcome.
+    The check results are written to the task log, and the full run report is
+    pushed to XCom (key ``datacontract_result``) in the shape of the
+    test-results API model (the Data Contract CLI ``Run``: runId,
+    dataContractId, server, timestamps, all checks with reasons and
+    diagnostics, logs), so downstream tasks can branch on the outcome.
 
     :param data_contract_file: Path or URL of the data contract YAML. Templated.
     :param data_contract_str: The data contract as a YAML string, as an alternative
@@ -144,7 +140,7 @@ class DataContractTestOperator(BaseOperator):
 
         run = DataContract(**dc_kwargs).test()
 
-        payload = self._build_payload(run)
+        payload = self._serialize_run(run)
         self._log_run(payload)
 
         ti = context["ti"]
@@ -152,11 +148,12 @@ class DataContractTestOperator(BaseOperator):
         if self.results_web_url:
             ti.xcom_push(key=XCOM_RESULTS_URL_KEY, value=self.results_web_url)
 
-        result = payload["result"]
+        result = payload.get("result", "unknown")
+        checks = payload.get("checks") or []
+        failed = sum(1 for c in checks if c.get("result") in ("failed", "error"))
         if result in ("failed", "error") or (self.fail_on_warning and result == "warning"):
             raise AirflowException(
-                f"Data contract test finished with result '{result}' "
-                f"({payload['checks_failed']} of {payload['checks_total']} checks failed)"
+                f"Data contract test finished with result '{result}' ({failed} of {len(checks)} checks failed)"
             )
         return payload
 
@@ -191,49 +188,38 @@ class DataContractTestOperator(BaseOperator):
             ) from e
         return Config(**fields)
 
-    def _build_payload(self, run: Any) -> dict[str, Any]:
-        checks = []
-        for check in getattr(run, "checks", None) or []:
-            checks.append(
-                {
-                    "name": _plain(getattr(check, "name", None)),
-                    "result": _plain(getattr(check, "result", None)),
-                    "category": _plain(getattr(check, "category", None)),
-                    "type": _plain(getattr(check, "type", None)),
-                    "model": _plain(getattr(check, "model", None)),
-                    "field": _plain(getattr(check, "field", None)),
-                    "reason": _plain(getattr(check, "reason", None)),
-                }
-            )
-        failed = sum(1 for c in checks if c["result"] in ("failed", "error"))
-        return {
-            "result": _plain(getattr(run, "result", None)) or "unknown",
-            "data_contract_file": self.data_contract_file,
-            "server": self.server,
-            "checks_total": len(checks),
-            "checks_failed": failed,
-            "checks": checks,
-        }
+    @staticmethod
+    def _serialize_run(run: Any) -> dict[str, Any]:
+        """Serialize the run in the shape of the test-results API model.
+
+        This is the same ``Run`` JSON the Data Contract CLI publishes to
+        ``/api/test-results`` (runId, dataContractId, server, timestamps,
+        checks with reasons and diagnostics, logs). ``None`` fields are
+        omitted to keep the XCom payload compact; consumers treat a missing
+        key and ``null`` the same.
+        """
+        payload = run.model_dump(mode="json", exclude_none=True)
+        payload.setdefault("result", "unknown")
+        return payload
 
     def _log_run(self, payload: dict[str, Any]) -> None:
-        result = payload["result"]
+        result = payload.get("result", "unknown")
+        checks = payload.get("checks") or []
+        failed = sum(1 for c in checks if c.get("result") in ("failed", "error"))
         self.log.info("Data contract test result: %s", str(result).upper())
-        self.log.info(
-            "%s of %s checks passed",
-            payload["checks_total"] - payload["checks_failed"],
-            payload["checks_total"],
-        )
-        for check in payload["checks"]:
-            icon = _ICONS.get(check["result"], "?")
-            location = ".".join(x for x in (check["model"], check["field"]) if x)
-            line = f"{icon} [{check['result']}] {check['name'] or check['type'] or 'check'}"
+        self.log.info("%s of %s checks passed", len(checks) - failed, len(checks))
+        for check in checks:
+            check_result = check.get("result")
+            icon = _ICONS.get(check_result, "?")
+            location = ".".join(x for x in (check.get("model"), check.get("field")) if x)
+            line = f"{icon} [{check_result}] {check.get('name') or check.get('type') or 'check'}"
             if location:
                 line += f" ({location})"
-            if check["reason"] and check["result"] != "passed":
+            if check.get("reason") and check_result != "passed":
                 line += f": {check['reason']}"
-            if check["result"] in ("failed", "error"):
+            if check_result in ("failed", "error"):
                 self.log.error("%s", line)
-            elif check["result"] == "warning":
+            elif check_result == "warning":
                 self.log.warning("%s", line)
             else:
                 self.log.info("%s", line)

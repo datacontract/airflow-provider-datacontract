@@ -4,7 +4,7 @@ import types
 from unittest.mock import MagicMock, patch
 
 from airflow.models import Connection
-from test_operator import FakeRun
+from test_operator import make_run
 
 from datacontract_provider.operators.datacontract import DataContractTestOperator
 
@@ -30,7 +30,7 @@ def _install_fake_datacontract(monkeypatch, run):
 
 
 def test_conn_ids_build_config(monkeypatch):
-    dc_cls = _install_fake_datacontract(monkeypatch, FakeRun("passed", []))
+    dc_cls = _install_fake_datacontract(monkeypatch, make_run("passed", []))
     connections = {
         "databricks_prod": Connection(
             conn_id="databricks_prod",
@@ -70,7 +70,7 @@ def test_conn_ids_build_config(monkeypatch):
 
 
 def test_no_conn_id_means_no_config(monkeypatch):
-    dc_cls = _install_fake_datacontract(monkeypatch, FakeRun("passed", []))
+    dc_cls = _install_fake_datacontract(monkeypatch, make_run("passed", []))
     operator = DataContractTestOperator(task_id="test", data_contract_file="datacontract.yaml")
     operator.execute({"ti": MagicMock()})
     assert "config" not in dc_cls.call_args.kwargs

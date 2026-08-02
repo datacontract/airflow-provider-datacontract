@@ -65,20 +65,24 @@ _PAGE = """<!doctype html>
     }
     for (const row of rows) {
       const res = row.result || {};
-      const checks = (res.checks || []).filter(c => c.result && c.result !== "passed");
-      const failing = checks.map(c =>
+      const checks = res.checks || [];
+      const notPassed = checks.filter(c => c.result && c.result !== "passed");
+      const failing = notPassed.map(c =>
         `<li>${c.result === "warning" ? "⚠" : "✗"} ${c.name || c.type || "check"}` +
         `${c.model ? " (" + [c.model, c.field].filter(Boolean).join(".") + ")" : ""}` +
         `${c.reason ? ": " + c.reason : ""}</li>`).join("");
-      const checksCell = res.checks_total == null ? "" :
-        `${res.checks_total - res.checks_failed}/${res.checks_total} passed` +
+      const checksCell = !checks.length ? "" :
+        `${checks.length - notPassed.length}/${checks.length} passed` +
         (failing ? `<details><summary>details</summary><ul class="checks">${failing}</ul></details>` : "");
+      const contract = res.dataContractId
+        ? res.dataContractId + (res.dataContractVersion ? " @ " + res.dataContractVersion : "")
+        : (res.data_contract_file || "");
       const tr = document.createElement("tr");
       tr.innerHTML =
         `<td>${(row.timestamp || "").replace("T", " ").slice(0, 19)}</td>` +
         `<td>${row.dag_id} / ${row.task_id}</td>` +
         `<td class="muted">${row.run_id || ""}</td>` +
-        `<td>${res.data_contract_file || ""}</td>` +
+        `<td>${contract}</td>` +
         `<td>${badge(res.result || "unknown")}</td>` +
         `<td>${checksCell}</td>`;
       tbody.appendChild(tr);
